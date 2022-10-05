@@ -88,10 +88,7 @@ class EMAModel:
         step = max(0, optimization_step - self.update_after_step - 1)
         value = 1 - (1 + step / self.inv_gamma) ** -self.power
 
-        if step <= 0:
-            return 0.0
-
-        return max(self.min_value, min(value, self.max_value))
+        return 0.0 if step <= 0 else max(self.min_value, min(value, self.max_value))
 
     @torch.no_grad()
     def step(self, new_model):

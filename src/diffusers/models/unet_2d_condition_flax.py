@@ -234,7 +234,7 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
         # 1. time
         if not isinstance(timesteps, jnp.ndarray):
             timesteps = jnp.array([timesteps], dtype=jnp.int32)
-        elif isinstance(timesteps, jnp.ndarray) and len(timesteps.shape) == 0:
+        elif len(timesteps.shape) == 0:
             timesteps = timesteps.astype(dtype=jnp.float32)
             timesteps = jnp.expand_dims(timesteps, 0)
 
@@ -278,7 +278,4 @@ class FlaxUNet2DConditionModel(nn.Module, FlaxModelMixin, ConfigMixin):
         sample = self.conv_out(sample)
         sample = jnp.transpose(sample, (0, 3, 1, 2))
 
-        if not return_dict:
-            return (sample,)
-
-        return FlaxUNet2DConditionOutput(sample=sample)
+        return FlaxUNet2DConditionOutput(sample=sample) if return_dict else (sample, )

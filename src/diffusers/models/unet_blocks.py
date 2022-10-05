@@ -1446,11 +1446,7 @@ class AttnSkipUpBlock2D(nn.Module):
 
         hidden_states = self.attentions[0](hidden_states)
 
-        if skip_sample is not None:
-            skip_sample = self.upsampler(skip_sample)
-        else:
-            skip_sample = 0
-
+        skip_sample = self.upsampler(skip_sample) if skip_sample is not None else 0
         if self.resnet_up is not None:
             skip_sample_states = self.skip_norm(hidden_states)
             skip_sample_states = self.act(skip_sample_states)
@@ -1541,11 +1537,7 @@ class SkipUpBlock2D(nn.Module):
 
             hidden_states = resnet(hidden_states, temb)
 
-        if skip_sample is not None:
-            skip_sample = self.upsampler(skip_sample)
-        else:
-            skip_sample = 0
-
+        skip_sample = self.upsampler(skip_sample) if skip_sample is not None else 0
         if self.resnet_up is not None:
             skip_sample_states = self.skip_norm(hidden_states)
             skip_sample_states = self.act(skip_sample_states)

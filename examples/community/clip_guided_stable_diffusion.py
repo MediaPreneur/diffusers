@@ -248,9 +248,8 @@ class CLIPGuidedStableDiffusion(DiffusionPipeline):
                 generator=generator,
                 device=latents_device,
             )
-        else:
-            if latents.shape != latents_shape:
-                raise ValueError(f"Unexpected latents shape, got {latents.shape}, expected {latents_shape}")
+        elif latents.shape != latents_shape:
+            raise ValueError(f"Unexpected latents shape, got {latents.shape}, expected {latents_shape}")
         latents = latents.to(self.device)
 
         # set timesteps
@@ -314,7 +313,8 @@ class CLIPGuidedStableDiffusion(DiffusionPipeline):
         if output_type == "pil":
             image = self.numpy_to_pil(image)
 
-        if not return_dict:
-            return (image, None)
-
-        return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=None)
+        return (
+            StableDiffusionPipelineOutput(images=image, nsfw_content_detected=None)
+            if return_dict
+            else (image, None)
+        )

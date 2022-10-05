@@ -175,9 +175,8 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
                 "`self.timesteps` is not set, you need to run 'set_timesteps' after creating the scheduler"
             )
 
-        timestep = timestep * torch.ones(
-            sample.shape[0], device=sample.device
-        )  # torch.repeat_interleave(timestep, sample.shape[0])
+        timestep *= torch.ones(sample.shape[0], device=sample.device)
+
         timesteps = (timestep * (len(self.timesteps) - 1)).long()
 
         # mps requires indices to be in the same device, so we use cpu as is the default with cuda
@@ -201,10 +200,11 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
         # TODO is the variable diffusion the correct scaling term for the noise?
         prev_sample = prev_sample_mean + diffusion * noise  # add impact of diffusion field g
 
-        if not return_dict:
-            return (prev_sample, prev_sample_mean)
-
-        return SdeVeOutput(prev_sample=prev_sample, prev_sample_mean=prev_sample_mean)
+        return (
+            SdeVeOutput(prev_sample=prev_sample, prev_sample_mean=prev_sample_mean)
+            if return_dict
+            else (prev_sample, prev_sample_mean)
+        )
 
     def step_correct(
         self,
@@ -256,10 +256,11 @@ class ScoreSdeVeScheduler(SchedulerMixin, ConfigMixin):
         prev_sample_mean = sample + step_size * model_output
         prev_sample = prev_sample_mean + ((step_size * 2) ** 0.5) * noise
 
-        if not return_dict:
-            return (prev_sample,)
-
-        return SchedulerOutput(prev_sample=prev_sample)
+        return (
+            SchedulerOutput(prev_sample=prev_sample)
+            if return_dict
+            else (prev_sample,)
+        )
 
     def __len__(self):
         return self.config.num_train_timesteps

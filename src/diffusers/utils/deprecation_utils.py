@@ -31,7 +31,7 @@ def deprecate(*args, take_from: Optional[Union[Dict, Any]] = None, standard_warn
             warning = f"`{attribute}` is deprecated and will be removed in version {version_name}."
 
         if warning is not None:
-            warning = warning + " " if standard_warn else ""
+            warning = f"{warning} " if standard_warn else ""
             warnings.warn(warning + message, DeprecationWarning)
 
     if isinstance(deprecated_kwargs, dict) and len(deprecated_kwargs) > 0:

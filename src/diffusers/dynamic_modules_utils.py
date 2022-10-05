@@ -101,7 +101,7 @@ def get_relative_import_files(module_file):
         new_import_files = [f for f in new_import_files if f not in all_relative_imports]
         files_to_check = [f"{f}.py" for f in new_import_files]
 
-        no_change = len(new_import_files) == 0
+        no_change = not new_import_files
         all_relative_imports.extend(files_to_check)
 
     return all_relative_imports
@@ -130,7 +130,7 @@ def check_imports(filename):
         except ImportError:
             missing_packages.append(imp)
 
-    if len(missing_packages) > 0:
+    if missing_packages:
         raise ImportError(
             "This modeling file requires the following packages that were not found in your environment: "
             f"{', '.join(missing_packages)}. Run `pip install {' '.join(missing_packages)}`"

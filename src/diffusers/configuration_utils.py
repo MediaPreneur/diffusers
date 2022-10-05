@@ -305,14 +305,14 @@ class ConfigMixin:
 
         config_dict = {k: v for k, v in config_dict.items() if not k.startswith("_")}
 
-        if len(config_dict) > 0:
+        if config_dict:
             logger.warning(
                 f"The config attributes {config_dict} were passed to {cls.__name__}, "
                 "but are not expected and will be ignored. Please verify your "
                 f"{cls.config_name} configuration file."
             )
 
-        unused_kwargs = {**config_dict, **kwargs}
+        unused_kwargs = config_dict | kwargs
 
         passed_keys = set(init_dict.keys())
         if len(expected_keys - passed_keys) > 0:
@@ -459,7 +459,7 @@ def flax_register_to_config(cls):
                 default_kwargs[field.name] = getattr(self, field.name)
 
         # Make sure init_kwargs override default kwargs
-        new_kwargs = {**default_kwargs, **init_kwargs}
+        new_kwargs = default_kwargs | init_kwargs
         # dtype should be part of `init_kwargs`, but not `new_kwargs`
         if "dtype" in new_kwargs:
             new_kwargs.pop("dtype")

@@ -131,20 +131,19 @@ def convert_ldm_checkpoint(checkpoint, config):
     """
     Takes a state dict and a config, and returns a converted checkpoint.
     """
-    new_checkpoint = {}
+    new_checkpoint = {
+        "time_embedding.linear_1.weight": checkpoint["time_embed.0.weight"],
+        "time_embedding.linear_1.bias": checkpoint["time_embed.0.bias"],
+        "time_embedding.linear_2.weight": checkpoint["time_embed.2.weight"],
+        "time_embedding.linear_2.bias": checkpoint["time_embed.2.bias"],
+        "conv_in.weight": checkpoint["input_blocks.0.0.weight"],
+        "conv_in.bias": checkpoint["input_blocks.0.0.bias"],
+        "conv_norm_out.weight": checkpoint["out.0.weight"],
+        "conv_norm_out.bias": checkpoint["out.0.bias"],
+        "conv_out.weight": checkpoint["out.2.weight"],
+        "conv_out.bias": checkpoint["out.2.bias"],
+    }
 
-    new_checkpoint["time_embedding.linear_1.weight"] = checkpoint["time_embed.0.weight"]
-    new_checkpoint["time_embedding.linear_1.bias"] = checkpoint["time_embed.0.bias"]
-    new_checkpoint["time_embedding.linear_2.weight"] = checkpoint["time_embed.2.weight"]
-    new_checkpoint["time_embedding.linear_2.bias"] = checkpoint["time_embed.2.bias"]
-
-    new_checkpoint["conv_in.weight"] = checkpoint["input_blocks.0.0.weight"]
-    new_checkpoint["conv_in.bias"] = checkpoint["input_blocks.0.0.bias"]
-
-    new_checkpoint["conv_norm_out.weight"] = checkpoint["out.0.weight"]
-    new_checkpoint["conv_norm_out.bias"] = checkpoint["out.0.bias"]
-    new_checkpoint["conv_out.weight"] = checkpoint["out.2.weight"]
-    new_checkpoint["conv_out.bias"] = checkpoint["out.2.bias"]
 
     # Retrieves the keys for the input blocks only
     num_input_blocks = len({".".join(layer.split(".")[:2]) for layer in checkpoint if "input_blocks" in layer})

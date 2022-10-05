@@ -79,7 +79,7 @@ def camel_case_split(identifier):
 
 
 def _center_text(text, width):
-    text_length = 2 if text == "✅" or text == "❌" else len(text)
+    text_length = 2 if text in ["✅", "❌"] else len(text)
     left_indent = (width - text_length) // 2
     right_indent = width - text_length - left_indent
     return " " * left_indent + text + " " * right_indent
@@ -136,7 +136,7 @@ def get_model_table_from_auto_modules():
     columns = ["Model", "Tokenizer slow", "Tokenizer fast", "PyTorch support", "TensorFlow support", "Flax Support"]
     # We'll need widths to properly display everything in the center (+2 is to leave one extra space on each side).
     widths = [len(c) + 2 for c in columns]
-    widths[0] = max([len(name) for name in model_names]) + 2
+    widths[0] = max(len(name) for name in model_names) + 2
 
     # Build the table per se
     table = "|" + "|".join([_center_text(c, w) for c, w in zip(columns, widths)]) + "|\n"

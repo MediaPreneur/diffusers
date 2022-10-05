@@ -289,10 +289,13 @@ class VectorQuantizer(nn.Module):
         min_encodings = None
 
         # compute loss for embedding
-        if not self.legacy:
-            loss = self.beta * torch.mean((z_q.detach() - z) ** 2) + torch.mean((z_q - z.detach()) ** 2)
-        else:
-            loss = torch.mean((z_q.detach() - z) ** 2) + self.beta * torch.mean((z_q - z.detach()) ** 2)
+        loss = (
+            torch.mean((z_q.detach() - z) ** 2)
+            + self.beta * torch.mean((z_q - z.detach()) ** 2)
+            if self.legacy
+            else self.beta * torch.mean((z_q.detach() - z) ** 2)
+            + torch.mean((z_q - z.detach()) ** 2)
+        )
 
         # preserve gradients
         z_q = z + (z_q - z).detach()
@@ -343,24 +346,22 @@ class DiagonalGaussianDistribution(object):
         device = self.parameters.device
         sample_device = "cpu" if device.type == "mps" else device
         sample = torch.randn(self.mean.shape, generator=generator, device=sample_device).to(device)
-        x = self.mean + self.std * sample
-        return x
+        return self.mean + self.std * sample
 
     def kl(self, other=None):
         if self.deterministic:
             return torch.Tensor([0.0])
+        if other is None:
+            return 0.5 * torch.sum(torch.pow(self.mean, 2) + self.var - 1.0 - self.logvar, dim=[1, 2, 3])
         else:
-            if other is None:
-                return 0.5 * torch.sum(torch.pow(self.mean, 2) + self.var - 1.0 - self.logvar, dim=[1, 2, 3])
-            else:
-                return 0.5 * torch.sum(
-                    torch.pow(self.mean - other.mean, 2) / other.var
-                    + self.var / other.var
-                    - 1.0
-                    - self.logvar
-                    + other.logvar,
-                    dim=[1, 2, 3],
-                )
+            return 0.5 * torch.sum(
+                torch.pow(self.mean - other.mean, 2) / other.var
+                + self.var / other.var
+                - 1.0
+                - self.logvar
+                + other.logvar,
+                dim=[1, 2, 3],
+            )
 
     def nll(self, sample, dims=[1, 2, 3]):
         if self.deterministic:
@@ -444,10 +445,7 @@ class VQModel(ModelMixin, ConfigMixin):
         h = self.encoder(x)
         h = self.quant_conv(h)
 
-        if not return_dict:
-            return (h,)
-
-        return VQEncoderOutput(latents=h)
+        return VQEncoderOutput(latents=h) if return_dict else (h, )
 
     def decode(
         self, h: torch.FloatTensor, force_not_quantize: bool = False, return_dict: bool = True
@@ -460,10 +458,7 @@ class VQModel(ModelMixin, ConfigMixin):
         quant = self.post_quant_conv(quant)
         dec = self.decoder(quant)
 
-        if not return_dict:
-            return (dec,)
-
-        return DecoderOutput(sample=dec)
+        return DecoderOutput(sample=dec) if return_dict else (dec, )
 
     def forward(self, sample: torch.FloatTensor, return_dict: bool = True) -> Union[DecoderOutput, torch.FloatTensor]:
         r"""
@@ -476,10 +471,7 @@ class VQModel(ModelMixin, ConfigMixin):
         h = self.encode(x).latents
         dec = self.decode(h).sample
 
-        if not return_dict:
-            return (dec,)
-
-        return DecoderOutput(sample=dec)
+        return DecoderOutput(sample=dec) if return_dict else (dec, )
 
 
 class AutoencoderKL(ModelMixin, ConfigMixin):
@@ -550,19 +542,17 @@ class AutoencoderKL(ModelMixin, ConfigMixin):
         moments = self.quant_conv(h)
         posterior = DiagonalGaussianDistribution(moments)
 
-        if not return_dict:
-            return (posterior,)
-
-        return AutoencoderKLOutput(latent_dist=posterior)
+        return (
+            AutoencoderKLOutput(latent_dist=posterior)
+            if return_dict
+            else (posterior,)
+        )
 
     def decode(self, z: torch.FloatTensor, return_dict: bool = True) -> Union[DecoderOutput, torch.FloatTensor]:
         z = self.post_quant_conv(z)
         dec = self.decoder(z)
 
-        if not return_dict:
-            return (dec,)
-
-        return DecoderOutput(sample=dec)
+        return DecoderOutput(sample=dec) if return_dict else (dec, )
 
     def forward(
         self,
@@ -587,7 +577,4 @@ class AutoencoderKL(ModelMixin, ConfigMixin):
             z = posterior.mode()
         dec = self.decode(z).sample
 
-        if not return_dict:
-            return (dec,)
-
-        return DecoderOutput(sample=dec)
+        return DecoderOutput(sample=dec) if return_dict else (dec, )

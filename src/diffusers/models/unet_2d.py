@@ -242,7 +242,4 @@ class UNet2DModel(ModelMixin, ConfigMixin):
             timesteps = timesteps.reshape((sample.shape[0], *([1] * len(sample.shape[1:]))))
             sample = sample / timesteps
 
-        if not return_dict:
-            return (sample,)
-
-        return UNet2DOutput(sample=sample)
+        return UNet2DOutput(sample=sample) if return_dict else (sample, )

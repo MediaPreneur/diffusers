@@ -319,7 +319,4 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin):
         sample = self.conv_act(sample)
         sample = self.conv_out(sample)
 
-        if not return_dict:
-            return (sample,)
-
-        return UNet2DConditionOutput(sample=sample)
+        return UNet2DConditionOutput(sample=sample) if return_dict else (sample, )

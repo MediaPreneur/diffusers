@@ -110,7 +110,4 @@ class KarrasVePipeline(DiffusionPipeline):
         if output_type == "pil":
             image = self.numpy_to_pil(sample)
 
-        if not return_dict:
-            return (image,)
-
-        return ImagePipelineOutput(images=image)
+        return ImagePipelineOutput(images=image) if return_dict else (image, )

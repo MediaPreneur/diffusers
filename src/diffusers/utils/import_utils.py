@@ -14,6 +14,7 @@
 """
 Import utilities: Utilities related to imports and our lazy inits.
 """
+
 import importlib.util
 import os
 import sys
@@ -42,8 +43,7 @@ USE_JAX = os.environ.get("USE_FLAX", "AUTO").upper()
 
 _torch_version = "N/A"
 if USE_TORCH in ENV_VARS_TRUE_AND_AUTO_VALUES and USE_TF not in ENV_VARS_TRUE_VALUES:
-    _torch_available = importlib.util.find_spec("torch") is not None
-    if _torch_available:
+    if _torch_available := importlib.util.find_spec("torch") is not None:
         try:
             _torch_version = importlib_metadata.version("torch")
             logger.info(f"PyTorch version {_torch_version} available.")
@@ -92,8 +92,10 @@ else:
 
 
 if USE_JAX in ENV_VARS_TRUE_AND_AUTO_VALUES:
-    _flax_available = importlib.util.find_spec("jax") is not None and importlib.util.find_spec("flax") is not None
-    if _flax_available:
+    if (
+        _flax_available := importlib.util.find_spec("jax") is not None
+        and importlib.util.find_spec("flax") is not None
+    ):
         try:
             _jax_version = importlib_metadata.version("jax")
             _flax_version = importlib_metadata.version("flax")
@@ -148,8 +150,8 @@ if _onnx_available:
         except importlib_metadata.PackageNotFoundError:
             pass
     _onnx_available = _onnxruntime_version is not None
-    if _onnx_available:
-        logger.debug(f"Successfully imported onnxruntime version {_onnxruntime_version}")
+if _onnx_available:
+    logger.debug(f"Successfully imported onnxruntime version {_onnxruntime_version}")
 
 
 _scipy_available = importlib.util.find_spec("scipy") is not None
@@ -265,8 +267,9 @@ def requires_backends(obj, backends):
 
     name = obj.__name__ if hasattr(obj, "__name__") else obj.__class__.__name__
     checks = (BACKENDS_MAPPING[backend] for backend in backends)
-    failed = [msg.format(name) for available, msg in checks if not available()]
-    if failed:
+    if failed := [
+        msg.format(name) for available, msg in checks if not available()
+    ]:
         raise ImportError("".join(failed))
 
 

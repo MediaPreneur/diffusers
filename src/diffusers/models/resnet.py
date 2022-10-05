@@ -84,11 +84,7 @@ class Downsample2D(nn.Module):
         # TODO(Suraj, Patrick) - clean up after weight dicts are correctly renamed
         if name == "conv":
             self.Conv2d_0 = conv
-            self.conv = conv
-        elif name == "Conv2d_0":
-            self.conv = conv
-        else:
-            self.conv = conv
+        self.conv = conv
 
     def forward(self, hidden_states):
         assert hidden_states.shape[1] == self.channels
@@ -105,7 +101,7 @@ class Downsample2D(nn.Module):
 class FirUpsample2D(nn.Module):
     def __init__(self, channels=None, out_channels=None, use_conv=False, fir_kernel=(1, 3, 3, 1)):
         super().__init__()
-        out_channels = out_channels if out_channels else channels
+        out_channels = out_channels or channels
         if use_conv:
             self.Conv2d_0 = nn.Conv2d(channels, out_channels, kernel_size=3, stride=1, padding=1)
         self.use_conv = use_conv
@@ -193,7 +189,7 @@ class FirUpsample2D(nn.Module):
 class FirDownsample2D(nn.Module):
     def __init__(self, channels=None, out_channels=None, use_conv=False, fir_kernel=(1, 3, 3, 1)):
         super().__init__()
-        out_channels = out_channels if out_channels else channels
+        out_channels = out_channels or channels
         if use_conv:
             self.Conv2d_0 = nn.Conv2d(channels, out_channels, kernel_size=3, stride=1, padding=1)
         self.fir_kernel = fir_kernel
@@ -364,9 +360,7 @@ class ResnetBlock2D(nn.Module):
         if self.conv_shortcut is not None:
             x = self.conv_shortcut(x)
 
-        out = (x + hidden_states) / self.output_scale_factor
-
-        return out
+        return (x + hidden_states) / self.output_scale_factor
 
 
 class Mish(torch.nn.Module):

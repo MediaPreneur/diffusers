@@ -777,10 +777,11 @@ class FlaxAutoencoderKL(nn.Module, FlaxModelMixin, ConfigMixin):
         moments = self.quant_conv(hidden_states)
         posterior = FlaxDiagonalGaussianDistribution(moments)
 
-        if not return_dict:
-            return (posterior,)
-
-        return FlaxAutoencoderKLOutput(latent_dist=posterior)
+        return (
+            FlaxAutoencoderKLOutput(latent_dist=posterior)
+            if return_dict
+            else (posterior,)
+        )
 
     def decode(self, latents, deterministic: bool = True, return_dict: bool = True):
         if latents.shape[-1] != self.config.latent_channels:
@@ -791,10 +792,11 @@ class FlaxAutoencoderKL(nn.Module, FlaxModelMixin, ConfigMixin):
 
         hidden_states = jnp.transpose(hidden_states, (0, 3, 1, 2))
 
-        if not return_dict:
-            return (hidden_states,)
-
-        return FlaxDecoderOutput(sample=hidden_states)
+        return (
+            FlaxDecoderOutput(sample=hidden_states)
+            if return_dict
+            else (hidden_states,)
+        )
 
     def __call__(self, sample, sample_posterior=False, deterministic: bool = True, return_dict: bool = True):
         posterior = self.encode(sample, deterministic=deterministic, return_dict=return_dict)
@@ -806,7 +808,4 @@ class FlaxAutoencoderKL(nn.Module, FlaxModelMixin, ConfigMixin):
 
         sample = self.decode(hidden_states, return_dict=return_dict).sample
 
-        if not return_dict:
-            return (sample,)
-
-        return FlaxDecoderOutput(sample=sample)
+        return FlaxDecoderOutput(sample=sample) if return_dict else (sample, )

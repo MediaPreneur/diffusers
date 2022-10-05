@@ -82,7 +82,4 @@ class ScoreSdeVePipeline(DiffusionPipeline):
         if output_type == "pil":
             sample = self.numpy_to_pil(sample)
 
-        if not return_dict:
-            return (sample,)
-
-        return ImagePipelineOutput(images=sample)
+        return ImagePipelineOutput(images=sample) if return_dict else (sample, )

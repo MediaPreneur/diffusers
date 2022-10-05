@@ -340,7 +340,7 @@ class FlaxModelMixin:
             try:
                 model_file = hf_hub_download(
                     pretrained_model_name_or_path,
-                    filename=FLAX_WEIGHTS_NAME if not from_pt else WEIGHTS_NAME,
+                    filename=WEIGHTS_NAME if from_pt else FLAX_WEIGHTS_NAME,
                     cache_dir=cache_dir,
                     force_download=force_download,
                     proxies=proxies,
@@ -351,6 +351,7 @@ class FlaxModelMixin:
                     subfolder=subfolder,
                     revision=revision,
                 )
+
 
             except RepositoryNotFoundError:
                 raise EnvironmentError(
@@ -419,11 +420,11 @@ class FlaxModelMixin:
                             )
                         else:
                             raise ValueError from e
-                except (UnicodeDecodeError, ValueError):
+                except ValueError:
                     raise EnvironmentError(f"Unable to convert {model_file} to Flax deserializable object. ")
-            # make sure all arrays are stored as jnp.ndarray
-            # NOTE: This is to prevent a bug this will be fixed in Flax >= v0.3.4:
-            # https://github.com/google/flax/issues/1261
+                # make sure all arrays are stored as jnp.ndarray
+                # NOTE: This is to prevent a bug this will be fixed in Flax >= v0.3.4:
+                # https://github.com/google/flax/issues/1261
         state = jax.tree_util.tree_map(lambda x: jax.device_put(x, jax.devices("cpu")[0]), state)
 
         # flatten dicts
@@ -486,7 +487,7 @@ class FlaxModelMixin:
         bf16_params = [k for k in param_dtypes if param_dtypes[k] == jnp.bfloat16]
 
         # raise a warning if any of the parameters are not in jnp.float32
-        if len(fp16_params) > 0:
+        if fp16_params:
             logger.warning(
                 f"Some of the weights of {model.__class__.__name__} were initialized in float16 precision from "
                 f"the model checkpoint at {pretrained_model_name_or_path}:\n{fp16_params}\n"
@@ -494,7 +495,7 @@ class FlaxModelMixin:
                 "See [`~ModelMixin.to_fp32`] for further information on how to do this."
             )
 
-        if len(bf16_params) > 0:
+        if bf16_params:
             logger.warning(
                 f"Some of the weights of {model.__class__.__name__} were initialized in bfloat16 precision from "
                 f"the model checkpoint at {pretrained_model_name_or_path}:\n{bf16_params}\n"
