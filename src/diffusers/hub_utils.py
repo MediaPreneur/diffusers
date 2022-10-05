@@ -38,11 +38,10 @@ MODEL_CARD_TEMPLATE_PATH = Path(__file__).parent / "utils" / "model_card_templat
 def get_full_repo_name(model_id: str, organization: Optional[str] = None, token: Optional[str] = None):
     if token is None:
         token = HfFolder.get_token()
-    if organization is None:
-        username = whoami(token)["name"]
-        return f"{username}/{model_id}"
-    else:
+    if organization is not None:
         return f"{organization}/{model_id}"
+    username = whoami(token)["name"]
+    return f"{username}/{model_id}"
 
 
 def init_git_repo(args, at_init: bool = False):

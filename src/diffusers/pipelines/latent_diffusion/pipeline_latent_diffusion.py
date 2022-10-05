@@ -158,10 +158,7 @@ class LDMTextToImagePipeline(DiffusionPipeline):
         if output_type == "pil":
             image = self.numpy_to_pil(image)
 
-        if not return_dict:
-            return (image,)
-
-        return ImagePipelineOutput(images=image)
+        return ImagePipelineOutput(images=image) if return_dict else (image, )
 
 
 ################################################################################
@@ -487,11 +484,10 @@ class LDMBertPreTrainedModel(PreTrainedModel):
     def dummy_inputs(self):
         pad_token = self.config.pad_token_id
         input_ids = torch.tensor([[0, 6, 10, 4, 2], [0, 8, 12, 2, pad_token]], device=self.device)
-        dummy_inputs = {
+        return {
             "attention_mask": input_ids.ne(pad_token),
             "input_ids": input_ids,
         }
-        return dummy_inputs
 
 
 class LDMBertEncoder(LDMBertPreTrainedModel):
@@ -612,12 +608,11 @@ class LDMBertEncoder(LDMBertPreTrainedModel):
         all_attentions = () if output_attentions else None
 
         # check if head_mask has a correct number of layers specified if desired
-        if head_mask is not None:
-            if head_mask.size()[0] != (len(self.layers)):
-                raise ValueError(
-                    f"The head_mask should be specified for {len(self.layers)} layers, but it is for"
-                    f" {head_mask.size()[0]}."
-                )
+        if head_mask is not None and head_mask.size()[0] != (len(self.layers)):
+            raise ValueError(
+                f"The head_mask should be specified for {len(self.layers)} layers, but it is for"
+                f" {head_mask.size()[0]}."
+            )
 
         for idx, encoder_layer in enumerate(self.layers):
             if output_hidden_states:
@@ -654,10 +649,18 @@ class LDMBertEncoder(LDMBertPreTrainedModel):
         if output_hidden_states:
             encoder_states = encoder_states + (hidden_states,)
 
-        if not return_dict:
-            return tuple(v for v in [hidden_states, encoder_states, all_attentions] if v is not None)
-        return BaseModelOutput(
-            last_hidden_state=hidden_states, hidden_states=encoder_states, attentions=all_attentions
+        return (
+            BaseModelOutput(
+                last_hidden_state=hidden_states,
+                hidden_states=encoder_states,
+                attentions=all_attentions,
+            )
+            if return_dict
+            else tuple(
+                v
+                for v in [hidden_states, encoder_states, all_attentions]
+                if v is not None
+            )
         )
 
 
@@ -678,7 +681,7 @@ class LDMBertModel(LDMBertPreTrainedModel):
         output_hidden_states=None,
         return_dict=None,
     ):
-        outputs = self.model(
+        return self.model(
             input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -688,4 +691,3 @@ class LDMBertModel(LDMBertPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        return outputs

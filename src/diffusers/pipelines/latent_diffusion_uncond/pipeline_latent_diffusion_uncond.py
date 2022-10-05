@@ -87,7 +87,4 @@ class LDMPipeline(DiffusionPipeline):
         if output_type == "pil":
             image = self.numpy_to_pil(image)
 
-        if not return_dict:
-            return (image,)
-
-        return ImagePipelineOutput(images=image)
+        return ImagePipelineOutput(images=image) if return_dict else (image, )

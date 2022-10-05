@@ -270,10 +270,11 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
         prev_sample = self._get_prev_sample(cur_sample, timestep, prev_timestep, model_output)
         self.counter += 1
 
-        if not return_dict:
-            return (prev_sample,)
-
-        return SchedulerOutput(prev_sample=prev_sample)
+        return (
+            SchedulerOutput(prev_sample=prev_sample)
+            if return_dict
+            else (prev_sample,)
+        )
 
     def step_plms(
         self,
@@ -317,7 +318,7 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
             self.ets.append(model_output)
         else:
             prev_timestep = timestep
-            timestep = timestep + self.config.num_train_timesteps // self.num_inference_steps
+            timestep += self.config.num_train_timesteps // self.num_inference_steps
 
         if len(self.ets) == 1 and self.counter == 0:
             model_output = model_output
@@ -336,10 +337,11 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
         prev_sample = self._get_prev_sample(sample, timestep, prev_timestep, model_output)
         self.counter += 1
 
-        if not return_dict:
-            return (prev_sample,)
-
-        return SchedulerOutput(prev_sample=prev_sample)
+        return (
+            SchedulerOutput(prev_sample=prev_sample)
+            if return_dict
+            else (prev_sample,)
+        )
 
     def _get_prev_sample(self, sample, timestep, prev_timestep, model_output):
         # See formula (9) of PNDM paper https://arxiv.org/pdf/2202.09778.pdf
@@ -370,12 +372,12 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
             alpha_prod_t * beta_prod_t * alpha_prod_t_prev
         ) ** (0.5)
 
-        # full formula (9)
-        prev_sample = (
-            sample_coeff * sample - (alpha_prod_t_prev - alpha_prod_t) * model_output / model_output_denom_coeff
+        return (
+            sample_coeff * sample
+            - (alpha_prod_t_prev - alpha_prod_t)
+            * model_output
+            / model_output_denom_coeff
         )
-
-        return prev_sample
 
     def add_noise(
         self,
@@ -399,8 +401,7 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
         while len(sqrt_one_minus_alpha_prod.shape) < len(original_samples.shape):
             sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod.unsqueeze(-1)
 
-        noisy_samples = sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
-        return noisy_samples
+        return sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
 
     def __len__(self):
         return self.config.num_train_timesteps

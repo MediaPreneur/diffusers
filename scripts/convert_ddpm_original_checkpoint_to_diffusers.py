@@ -100,20 +100,19 @@ def convert_ddpm_checkpoint(checkpoint, config):
     """
     Takes a state dict and a config, and returns a converted checkpoint.
     """
-    new_checkpoint = {}
+    new_checkpoint = {
+        "time_embedding.linear_1.weight": checkpoint["temb.dense.0.weight"],
+        "time_embedding.linear_1.bias": checkpoint["temb.dense.0.bias"],
+        "time_embedding.linear_2.weight": checkpoint["temb.dense.1.weight"],
+        "time_embedding.linear_2.bias": checkpoint["temb.dense.1.bias"],
+        "conv_norm_out.weight": checkpoint["norm_out.weight"],
+        "conv_norm_out.bias": checkpoint["norm_out.bias"],
+        "conv_in.weight": checkpoint["conv_in.weight"],
+        "conv_in.bias": checkpoint["conv_in.bias"],
+        "conv_out.weight": checkpoint["conv_out.weight"],
+        "conv_out.bias": checkpoint["conv_out.bias"],
+    }
 
-    new_checkpoint["time_embedding.linear_1.weight"] = checkpoint["temb.dense.0.weight"]
-    new_checkpoint["time_embedding.linear_1.bias"] = checkpoint["temb.dense.0.bias"]
-    new_checkpoint["time_embedding.linear_2.weight"] = checkpoint["temb.dense.1.weight"]
-    new_checkpoint["time_embedding.linear_2.bias"] = checkpoint["temb.dense.1.bias"]
-
-    new_checkpoint["conv_norm_out.weight"] = checkpoint["norm_out.weight"]
-    new_checkpoint["conv_norm_out.bias"] = checkpoint["norm_out.bias"]
-
-    new_checkpoint["conv_in.weight"] = checkpoint["conv_in.weight"]
-    new_checkpoint["conv_in.bias"] = checkpoint["conv_in.bias"]
-    new_checkpoint["conv_out.weight"] = checkpoint["conv_out.weight"]
-    new_checkpoint["conv_out.bias"] = checkpoint["conv_out.bias"]
 
     num_down_blocks = len({".".join(layer.split(".")[:2]) for layer in checkpoint if "down" in layer})
     down_blocks = {
@@ -236,23 +235,21 @@ def convert_vq_autoenc_checkpoint(checkpoint, config):
     """
     Takes a state dict and a config, and returns a converted checkpoint.
     """
-    new_checkpoint = {}
+    new_checkpoint = {
+        "encoder.conv_norm_out.weight": checkpoint["encoder.norm_out.weight"],
+        "encoder.conv_norm_out.bias": checkpoint["encoder.norm_out.bias"],
+        "encoder.conv_in.weight": checkpoint["encoder.conv_in.weight"],
+        "encoder.conv_in.bias": checkpoint["encoder.conv_in.bias"],
+        "encoder.conv_out.weight": checkpoint["encoder.conv_out.weight"],
+        "encoder.conv_out.bias": checkpoint["encoder.conv_out.bias"],
+        "decoder.conv_norm_out.weight": checkpoint["decoder.norm_out.weight"],
+        "decoder.conv_norm_out.bias": checkpoint["decoder.norm_out.bias"],
+        "decoder.conv_in.weight": checkpoint["decoder.conv_in.weight"],
+        "decoder.conv_in.bias": checkpoint["decoder.conv_in.bias"],
+        "decoder.conv_out.weight": checkpoint["decoder.conv_out.weight"],
+        "decoder.conv_out.bias": checkpoint["decoder.conv_out.bias"],
+    }
 
-    new_checkpoint["encoder.conv_norm_out.weight"] = checkpoint["encoder.norm_out.weight"]
-    new_checkpoint["encoder.conv_norm_out.bias"] = checkpoint["encoder.norm_out.bias"]
-
-    new_checkpoint["encoder.conv_in.weight"] = checkpoint["encoder.conv_in.weight"]
-    new_checkpoint["encoder.conv_in.bias"] = checkpoint["encoder.conv_in.bias"]
-    new_checkpoint["encoder.conv_out.weight"] = checkpoint["encoder.conv_out.weight"]
-    new_checkpoint["encoder.conv_out.bias"] = checkpoint["encoder.conv_out.bias"]
-
-    new_checkpoint["decoder.conv_norm_out.weight"] = checkpoint["decoder.norm_out.weight"]
-    new_checkpoint["decoder.conv_norm_out.bias"] = checkpoint["decoder.norm_out.bias"]
-
-    new_checkpoint["decoder.conv_in.weight"] = checkpoint["decoder.conv_in.weight"]
-    new_checkpoint["decoder.conv_in.bias"] = checkpoint["decoder.conv_in.bias"]
-    new_checkpoint["decoder.conv_out.weight"] = checkpoint["decoder.conv_out.weight"]
-    new_checkpoint["decoder.conv_out.bias"] = checkpoint["decoder.conv_out.bias"]
 
     num_down_blocks = len({".".join(layer.split(".")[:3]) for layer in checkpoint if "down" in layer})
     down_blocks = {
@@ -404,7 +401,7 @@ if __name__ == "__main__":
         config = json.loads(f.read())
 
     # unet case
-    key_prefix_set = set(key.split(".")[0] for key in checkpoint.keys())
+    key_prefix_set = {key.split(".")[0] for key in checkpoint.keys()}
     if "encoder" in key_prefix_set and "decoder" in key_prefix_set:
         converted_checkpoint = convert_vq_autoenc_checkpoint(checkpoint, config)
     else:

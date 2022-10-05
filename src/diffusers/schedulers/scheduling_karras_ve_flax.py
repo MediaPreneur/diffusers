@@ -184,10 +184,13 @@ class FlaxKarrasVeScheduler(FlaxSchedulerMixin, ConfigMixin):
         derivative = (sample_hat - pred_original_sample) / sigma_hat
         sample_prev = sample_hat + (sigma_prev - sigma_hat) * derivative
 
-        if not return_dict:
-            return (sample_prev, derivative, state)
-
-        return FlaxKarrasVeOutput(prev_sample=sample_prev, derivative=derivative, state=state)
+        return (
+            FlaxKarrasVeOutput(
+                prev_sample=sample_prev, derivative=derivative, state=state
+            )
+            if return_dict
+            else (sample_prev, derivative, state)
+        )
 
     def step_correct(
         self,
@@ -221,10 +224,13 @@ class FlaxKarrasVeScheduler(FlaxSchedulerMixin, ConfigMixin):
         derivative_corr = (sample_prev - pred_original_sample) / sigma_prev
         sample_prev = sample_hat + (sigma_prev - sigma_hat) * (0.5 * derivative + 0.5 * derivative_corr)
 
-        if not return_dict:
-            return (sample_prev, derivative, state)
-
-        return FlaxKarrasVeOutput(prev_sample=sample_prev, derivative=derivative, state=state)
+        return (
+            FlaxKarrasVeOutput(
+                prev_sample=sample_prev, derivative=derivative, state=state
+            )
+            if return_dict
+            else (sample_prev, derivative, state)
+        )
 
     def add_noise(self, original_samples, noise, timesteps):
         raise NotImplementedError()

@@ -59,7 +59,9 @@ def split_code_in_indented_blocks(code, indent_level="", start_prompt=None, end_
     index += 1
     while index < len(lines) and (end_prompt is None or not lines[index].startswith(end_prompt)):
         if len(lines[index]) > 0 and get_indent(lines[index]) == indent_level:
-            if len(current_block) > 0 and get_indent(current_block[-1]).startswith(indent_level + " "):
+            if len(current_block) > 0 and get_indent(
+                current_block[-1]
+            ).startswith(f"{indent_level} "):
                 current_block.append(lines[index])
                 blocks.append("\n".join(current_block))
                 if index < len(lines) - 1:
@@ -225,18 +227,18 @@ def sort_imports(file, check_only=True):
     if code != "\n".join(main_blocks):
         if check_only:
             return True
-        else:
-            print(f"Overwriting {file}.")
-            with open(file, "w") as f:
-                f.write("\n".join(main_blocks))
+        print(f"Overwriting {file}.")
+        with open(file, "w") as f:
+            f.write("\n".join(main_blocks))
 
 
 def sort_imports_in_all_inits(check_only=True):
     failures = []
     for root, _, files in os.walk(PATH_TO_TRANSFORMERS):
         if "__init__.py" in files:
-            result = sort_imports(os.path.join(root, "__init__.py"), check_only=check_only)
-            if result:
+            if result := sort_imports(
+                os.path.join(root, "__init__.py"), check_only=check_only
+            ):
                 failures = [os.path.join(root, "__init__.py")]
     if len(failures) > 0:
         raise ValueError(f"Would overwrite {len(failures)} files, run `make style`.")

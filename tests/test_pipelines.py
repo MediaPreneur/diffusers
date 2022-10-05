@@ -92,13 +92,14 @@ class PipelineFastTests(unittest.TestCase):
         num_channels = 3
         sizes = (32, 32)
 
-        image = floats_tensor((batch_size, num_channels) + sizes, rng=random.Random(0)).to(torch_device)
-        return image
+        return floats_tensor(
+            (batch_size, num_channels) + sizes, rng=random.Random(0)
+        ).to(torch_device)
 
     @property
     def dummy_uncond_unet(self):
         torch.manual_seed(0)
-        model = UNet2DModel(
+        return UNet2DModel(
             block_out_channels=(32, 64),
             layers_per_block=2,
             sample_size=32,
@@ -107,12 +108,11 @@ class PipelineFastTests(unittest.TestCase):
             down_block_types=("DownBlock2D", "AttnDownBlock2D"),
             up_block_types=("AttnUpBlock2D", "UpBlock2D"),
         )
-        return model
 
     @property
     def dummy_cond_unet(self):
         torch.manual_seed(0)
-        model = UNet2DConditionModel(
+        return UNet2DConditionModel(
             block_out_channels=(32, 64),
             layers_per_block=2,
             sample_size=32,
@@ -122,12 +122,11 @@ class PipelineFastTests(unittest.TestCase):
             up_block_types=("CrossAttnUpBlock2D", "UpBlock2D"),
             cross_attention_dim=32,
         )
-        return model
 
     @property
     def dummy_vq_model(self):
         torch.manual_seed(0)
-        model = VQModel(
+        return VQModel(
             block_out_channels=[32, 64],
             in_channels=3,
             out_channels=3,
@@ -135,12 +134,11 @@ class PipelineFastTests(unittest.TestCase):
             up_block_types=["UpDecoderBlock2D", "UpDecoderBlock2D"],
             latent_channels=3,
         )
-        return model
 
     @property
     def dummy_vae(self):
         torch.manual_seed(0)
-        model = AutoencoderKL(
+        return AutoencoderKL(
             block_out_channels=[32, 64],
             in_channels=3,
             out_channels=3,
@@ -148,7 +146,6 @@ class PipelineFastTests(unittest.TestCase):
             up_block_types=["UpDecoderBlock2D", "UpDecoderBlock2D"],
             latent_channels=4,
         )
-        return model
 
     @property
     def dummy_text_encoder(self):

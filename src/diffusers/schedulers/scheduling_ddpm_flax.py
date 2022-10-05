@@ -254,10 +254,11 @@ class FlaxDDPMScheduler(FlaxSchedulerMixin, ConfigMixin):
 
         pred_prev_sample = pred_prev_sample + variance
 
-        if not return_dict:
-            return (pred_prev_sample, state)
-
-        return FlaxDDPMSchedulerOutput(prev_sample=pred_prev_sample, state=state)
+        return (
+            FlaxDDPMSchedulerOutput(prev_sample=pred_prev_sample, state=state)
+            if return_dict
+            else (pred_prev_sample, state)
+        )
 
     def add_noise(
         self,
@@ -275,8 +276,7 @@ class FlaxDDPMScheduler(FlaxSchedulerMixin, ConfigMixin):
         while len(sqrt_one_minus_alpha_prod.shape) < len(original_samples.shape):
             sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod[..., None]
 
-        noisy_samples = sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
-        return noisy_samples
+        return sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
 
     def __len__(self):
         return self.config.num_train_timesteps

@@ -58,8 +58,8 @@ LOADABLE_CLASSES = {
 }
 
 ALL_IMPORTABLE_CLASSES = {}
-for library in LOADABLE_CLASSES:
-    ALL_IMPORTABLE_CLASSES.update(LOADABLE_CLASSES[library])
+for value in LOADABLE_CLASSES.values():
+    ALL_IMPORTABLE_CLASSES |= value
 
 
 class DummyChecker:
@@ -70,7 +70,7 @@ class DummyChecker:
 def import_flax_or_no_model(module, class_name):
     try:
         # 1. First make sure that if a Flax object is present, import this one
-        class_obj = getattr(module, "Flax" + class_name)
+        class_obj = getattr(module, f"Flax{class_name}")
     except AttributeError:
         # 2. If this doesn't work, it's not a model and we don't append "Flax"
         class_obj = getattr(module, class_name)
@@ -160,7 +160,7 @@ class FlaxDiffusionPipeline(ConfigMixin):
         model_index_dict.pop("_diffusers_version")
         model_index_dict.pop("_module", None)
 
-        for pipeline_component_name in model_index_dict.keys():
+        for pipeline_component_name in model_index_dict:
             sub_model = getattr(self, pipeline_component_name)
             model_cls = sub_model.__class__
 
@@ -369,7 +369,7 @@ class FlaxDiffusionPipeline(ConfigMixin):
                     class_candidates = {c: getattr(library, c) for c in importable_classes.keys()}
 
                     expected_class_obj = None
-                    for class_name, class_candidate in class_candidates.items():
+                    for class_candidate in class_candidates.values():
                         if issubclass(class_obj, class_candidate):
                             expected_class_obj = class_candidate
 
@@ -455,9 +455,7 @@ class FlaxDiffusionPipeline(ConfigMixin):
         if images.ndim == 3:
             images = images[None, ...]
         images = (images * 255).round().astype("uint8")
-        pil_images = [Image.fromarray(image) for image in images]
-
-        return pil_images
+        return [Image.fromarray(image) for image in images]
 
     # TODO: make it compatible with jax.lax
     def progress_bar(self, iterable):

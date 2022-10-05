@@ -180,9 +180,10 @@ class FlaxScoreSdeVeScheduler(FlaxSchedulerMixin, ConfigMixin):
                 "`state.timesteps` is not set, you need to run 'set_timesteps' after creating the scheduler"
             )
 
-        timestep = timestep * jnp.ones(
+        timestep *= jnp.ones(
             sample.shape[0],
         )
+
         timesteps = (timestep * (len(state.timesteps) - 1)).long()
 
         sigma = state.discrete_sigmas[timesteps]
@@ -204,10 +205,15 @@ class FlaxScoreSdeVeScheduler(FlaxSchedulerMixin, ConfigMixin):
         # TODO is the variable diffusion the correct scaling term for the noise?
         prev_sample = prev_sample_mean + diffusion * noise  # add impact of diffusion field g
 
-        if not return_dict:
-            return (prev_sample, prev_sample_mean, state)
-
-        return FlaxSdeVeOutput(prev_sample=prev_sample, prev_sample_mean=prev_sample_mean, state=state)
+        return (
+            FlaxSdeVeOutput(
+                prev_sample=prev_sample,
+                prev_sample_mean=prev_sample_mean,
+                state=state,
+            )
+            if return_dict
+            else (prev_sample, prev_sample_mean, state)
+        )
 
     def step_correct(
         self,
@@ -257,10 +263,11 @@ class FlaxScoreSdeVeScheduler(FlaxSchedulerMixin, ConfigMixin):
         prev_sample_mean = sample + step_size * model_output
         prev_sample = prev_sample_mean + ((step_size * 2) ** 0.5) * noise
 
-        if not return_dict:
-            return (prev_sample, state)
-
-        return FlaxSdeVeOutput(prev_sample=prev_sample, state=state)
+        return (
+            FlaxSdeVeOutput(prev_sample=prev_sample, state=state)
+            if return_dict
+            else (prev_sample, state)
+        )
 
     def __len__(self):
         return self.config.num_train_timesteps

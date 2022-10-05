@@ -89,13 +89,12 @@ class Timesteps(nn.Module):
         self.downscale_freq_shift = downscale_freq_shift
 
     def forward(self, timesteps):
-        t_emb = get_timestep_embedding(
+        return get_timestep_embedding(
             timesteps,
             self.num_channels,
             flip_sin_to_cos=self.flip_sin_to_cos,
             downscale_freq_shift=self.downscale_freq_shift,
         )
-        return t_emb
 
 
 class GaussianFourierProjection(nn.Module):
@@ -113,5 +112,4 @@ class GaussianFourierProjection(nn.Module):
     def forward(self, x):
         x = torch.log(x)
         x_proj = x[:, None] * self.weight[None, :] * 2 * np.pi
-        out = torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
-        return out
+        return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)

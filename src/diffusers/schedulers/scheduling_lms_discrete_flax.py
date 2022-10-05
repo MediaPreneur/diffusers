@@ -186,10 +186,11 @@ class FlaxLMSDiscreteScheduler(FlaxSchedulerMixin, ConfigMixin):
             coeff * derivative for coeff, derivative in zip(lms_coeffs, reversed(state.derivatives))
         )
 
-        if not return_dict:
-            return (prev_sample, state)
-
-        return FlaxLMSSchedulerOutput(prev_sample=prev_sample, state=state)
+        return (
+            FlaxLMSSchedulerOutput(prev_sample=prev_sample, state=state)
+            if return_dict
+            else (prev_sample, state)
+        )
 
     def add_noise(
         self,
@@ -202,9 +203,7 @@ class FlaxLMSDiscreteScheduler(FlaxSchedulerMixin, ConfigMixin):
         while len(sigma.shape) < len(noise.shape):
             sigma = sigma[..., None]
 
-        noisy_samples = original_samples + noise * sigma
-
-        return noisy_samples
+        return original_samples + noise * sigma
 
     def __len__(self):
         return self.config.num_train_timesteps

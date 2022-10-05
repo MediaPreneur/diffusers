@@ -84,14 +84,13 @@ class BaseOutput(OrderedDict):
         raise Exception(f"You cannot use ``update`` on a {self.__class__.__name__} instance.")
 
     def __getitem__(self, k):
-        if isinstance(k, str):
-            inner_dict = {k: v for (k, v) in self.items()}
-            if self.__class__.__name__ in ["StableDiffusionPipelineOutput", "ImagePipelineOutput"] and k == "sample":
-                deprecate("samples", "0.6.0", "Please use `.images` or `'images'` instead.")
-                return inner_dict["images"]
-            return inner_dict[k]
-        else:
+        if not isinstance(k, str):
             return self.to_tuple()[k]
+        inner_dict = dict(self.items())
+        if self.__class__.__name__ in ["StableDiffusionPipelineOutput", "ImagePipelineOutput"] and k == "sample":
+            deprecate("samples", "0.6.0", "Please use `.images` or `'images'` instead.")
+            return inner_dict["images"]
+        return inner_dict[k]
 
     def __setattr__(self, name, value):
         if name in self.keys() and value is not None:

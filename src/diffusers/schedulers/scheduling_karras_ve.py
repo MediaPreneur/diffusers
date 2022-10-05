@@ -172,11 +172,14 @@ class KarrasVeScheduler(SchedulerMixin, ConfigMixin):
         derivative = (sample_hat - pred_original_sample) / sigma_hat
         sample_prev = sample_hat + (sigma_prev - sigma_hat) * derivative
 
-        if not return_dict:
-            return (sample_prev, derivative)
-
-        return KarrasVeOutput(
-            prev_sample=sample_prev, derivative=derivative, pred_original_sample=pred_original_sample
+        return (
+            KarrasVeOutput(
+                prev_sample=sample_prev,
+                derivative=derivative,
+                pred_original_sample=pred_original_sample,
+            )
+            if return_dict
+            else (sample_prev, derivative)
         )
 
     def step_correct(
@@ -209,11 +212,14 @@ class KarrasVeScheduler(SchedulerMixin, ConfigMixin):
         derivative_corr = (sample_prev - pred_original_sample) / sigma_prev
         sample_prev = sample_hat + (sigma_prev - sigma_hat) * (0.5 * derivative + 0.5 * derivative_corr)
 
-        if not return_dict:
-            return (sample_prev, derivative)
-
-        return KarrasVeOutput(
-            prev_sample=sample_prev, derivative=derivative, pred_original_sample=pred_original_sample
+        return (
+            KarrasVeOutput(
+                prev_sample=sample_prev,
+                derivative=derivative,
+                pred_original_sample=pred_original_sample,
+            )
+            if return_dict
+            else (sample_prev, derivative)
         )
 
     def add_noise(self, original_samples, noise, timesteps):

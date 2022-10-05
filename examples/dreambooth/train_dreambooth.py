@@ -199,7 +199,7 @@ def parse_args():
 
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
-    if env_local_rank != -1 and env_local_rank != args.local_rank:
+    if env_local_rank not in [-1, args.local_rank]:
         args.local_rank = env_local_rank
 
     if args.instance_data_dir is None:
@@ -266,11 +266,10 @@ class DreamBoothDataset(Dataset):
         return self._length
 
     def __getitem__(self, index):
-        example = {}
         instance_image = Image.open(self.instance_images_path[index % self.num_instance_images])
-        if not instance_image.mode == "RGB":
+        if instance_image.mode != "RGB":
             instance_image = instance_image.convert("RGB")
-        example["instance_images"] = self.image_transforms(instance_image)
+        example = {"instance_images": self.image_transforms(instance_image)}
         example["instance_prompt_ids"] = self.tokenizer(
             self.instance_prompt,
             padding="do_not_pad",
@@ -280,7 +279,7 @@ class DreamBoothDataset(Dataset):
 
         if self.class_data_root:
             class_image = Image.open(self.class_images_path[index % self.num_class_images])
-            if not class_image.mode == "RGB":
+            if class_image.mode != "RGB":
                 class_image = class_image.convert("RGB")
             example["class_images"] = self.image_transforms(class_image)
             example["class_prompt_ids"] = self.tokenizer(
@@ -304,10 +303,7 @@ class PromptDataset(Dataset):
         return self.num_samples
 
     def __getitem__(self, index):
-        example = {}
-        example["prompt"] = self.prompt
-        example["index"] = index
-        return example
+        return {"prompt": self.prompt, "index": index}
 
 
 class LatentsDataset(Dataset):
@@ -339,11 +335,10 @@ class AverageMeter:
 def get_full_repo_name(model_id: str, organization: Optional[str] = None, token: Optional[str] = None):
     if token is None:
         token = HfFolder.get_token()
-    if organization is None:
-        username = whoami(token)["name"]
-        return f"{username}/{model_id}"
-    else:
+    if organization is not None:
         return f"{organization}/{model_id}"
+    username = whoami(token)["name"]
+    return f"{username}/{model_id}"
 
 
 def main():
@@ -572,10 +567,12 @@ def main():
             with accelerator.accumulate(unet):
                 # Convert images to latent space
                 with torch.no_grad():
-                    if not args.not_cache_latents:
-                        latent_dist = batch[0][0]
-                    else:
-                        latent_dist = vae.encode(batch["pixel_values"]).latent_dist
+                    latent_dist = (
+                        vae.encode(batch["pixel_values"]).latent_dist
+                        if args.not_cache_latents
+                        else batch[0][0]
+                    )
+
                     latents = latent_dist.sample() * 0.18215
 
                 # Sample noise that we'll add to the latents
@@ -591,10 +588,11 @@ def main():
 
                 # Get the text embedding for conditioning
                 with torch.no_grad():
-                    if not args.not_cache_latents:
-                        encoder_hidden_states = batch[0][1]
-                    else:
-                        encoder_hidden_states = text_encoder(batch["input_ids"])[0]
+                    encoder_hidden_states = (
+                        text_encoder(batch["input_ids"])[0]
+                        if args.not_cache_latents
+                        else batch[0][1]
+                    )
 
                 # Predict the noise residual
                 noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
@@ -627,7 +625,7 @@ def main():
                 logs = {"loss": loss_avg.avg.item(), "lr": lr_scheduler.get_last_lr()[0]}
                 progress_bar.set_postfix(**logs)
                 accelerator.log(logs, step=global_step)
-            
+
             progress_bar.update(1)
             global_step += 1
 

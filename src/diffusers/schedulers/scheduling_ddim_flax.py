@@ -152,9 +152,9 @@ class FlaxDDIMScheduler(FlaxSchedulerMixin, ConfigMixin):
         beta_prod_t = 1 - alpha_prod_t
         beta_prod_t_prev = 1 - alpha_prod_t_prev
 
-        variance = (beta_prod_t_prev / beta_prod_t) * (1 - alpha_prod_t / alpha_prod_t_prev)
-
-        return variance
+        return (beta_prod_t_prev / beta_prod_t) * (
+            1 - alpha_prod_t / alpha_prod_t_prev
+        )
 
     def set_timesteps(self, state: DDIMSchedulerState, num_inference_steps: int, shape: Tuple) -> DDIMSchedulerState:
         """
@@ -249,10 +249,11 @@ class FlaxDDIMScheduler(FlaxSchedulerMixin, ConfigMixin):
         # 6. compute x_t without "random noise" of formula (12) from https://arxiv.org/pdf/2010.02502.pdf
         prev_sample = alpha_prod_t_prev ** (0.5) * pred_original_sample + pred_sample_direction
 
-        if not return_dict:
-            return (prev_sample, state)
-
-        return FlaxDDIMSchedulerOutput(prev_sample=prev_sample, state=state)
+        return (
+            FlaxDDIMSchedulerOutput(prev_sample=prev_sample, state=state)
+            if return_dict
+            else (prev_sample, state)
+        )
 
     def add_noise(
         self,
@@ -270,8 +271,7 @@ class FlaxDDIMScheduler(FlaxSchedulerMixin, ConfigMixin):
         while len(sqrt_one_minus_alpha_prod.shape) < len(original_samples.shape):
             sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod[:, None]
 
-        noisy_samples = sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
-        return noisy_samples
+        return sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
 
     def __len__(self):
         return self.config.num_train_timesteps

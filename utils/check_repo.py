@@ -219,8 +219,7 @@ def check_model_list():
     # Get the models from the directory structure of `src/transformers/models/`
     models = [model for model in dir(diffusers.models) if not model.startswith("__")]
 
-    missing_models = sorted(list(set(_models).difference(models)))
-    if missing_models:
+    if missing_models := sorted(list(set(_models).difference(models))):
         raise Exception(
             f"The following models should be included in {models_dir}/__init__.py: {','.join(missing_models)}."
         )
@@ -288,11 +287,7 @@ def is_a_private_model(model):
     # Wrapper, Encoder and Decoder are all privates
     if model.endswith("Wrapper"):
         return True
-    if model.endswith("Encoder"):
-        return True
-    if model.endswith("Decoder"):
-        return True
-    return False
+    return True if model.endswith("Encoder") else bool(model.endswith("Decoder"))
 
 
 def check_models_are_in_init():
@@ -304,9 +299,9 @@ def check_models_are_in_init():
             model[0] for model in get_models(module, include_pretrained=True) if model[0] not in dir_transformers
         ]
 
-    # Remove private models
-    models_not_in_init = [model for model in models_not_in_init if not is_a_private_model(model)]
-    if len(models_not_in_init) > 0:
+    if models_not_in_init := [
+        model for model in models_not_in_init if not is_a_private_model(model)
+    ]:
         raise Exception(f"The following models should be in the main init: {','.join(models_not_in_init)}.")
 
 
@@ -342,7 +337,10 @@ def get_model_test_files():
             path = os.path.join(target_dir, file_or_dir)
             if os.path.isfile(path):
                 filename = os.path.split(path)[-1]
-                if "test_modeling" in filename and not os.path.splitext(filename)[0] in _ignore_files:
+                if (
+                    "test_modeling" in filename
+                    and os.path.splitext(filename)[0] not in _ignore_files
+                ):
                     file = os.path.join(*path.split(os.sep)[1:])
                     test_files.append(file)
 
@@ -382,16 +380,15 @@ def check_models_are_tested(module, test_file):
             + "If this intentional, add the test filename to `TEST_FILES_WITH_NO_COMMON_TESTS` in the file "
             + "`utils/check_repo.py`."
         ]
-    failures = []
-    for model_name, _ in defined_models:
-        if model_name not in tested_models and model_name not in IGNORE_NON_TESTED:
-            failures.append(
-                f"{model_name} is defined in {module.__name__} but is not tested in "
-                + f"{os.path.join(PATH_TO_TESTS, test_file)}. Add it to the all_model_classes in that file."
-                + "If common tests should not applied to that model, add its name to `IGNORE_NON_TESTED`"
-                + "in the file `utils/check_repo.py`."
-            )
-    return failures
+    return [
+        f"{model_name} is defined in {module.__name__} but is not tested in "
+        + f"{os.path.join(PATH_TO_TESTS, test_file)}. Add it to the all_model_classes in that file."
+        + "If common tests should not applied to that model, add its name to `IGNORE_NON_TESTED`"
+        + "in the file `utils/check_repo.py`."
+        for model_name, _ in defined_models
+        if model_name not in tested_models
+        and model_name not in IGNORE_NON_TESTED
+    ]
 
 
 def check_all_models_are_tested():
@@ -401,7 +398,7 @@ def check_all_models_are_tested():
     failures = []
     for module in modules:
         test_file = [file for file in test_files if f"test_{module.__name__.split('.')[-1]}.py" in file]
-        if len(test_file) == 0:
+        if not test_file:
             failures.append(f"{module.__name__} does not have its corresponding test file {test_file}.")
         elif len(test_file) > 1:
             failures.append(f"{module.__name__} has several test files: {test_file}.")
@@ -429,7 +426,7 @@ def get_all_auto_configured_models():
         for attr_name in dir(diffusers.models.auto.modeling_flax_auto):
             if attr_name.startswith("FLAX_MODEL_") and attr_name.endswith("MAPPING_NAMES"):
                 result = result | set(get_values(getattr(diffusers.models.auto.modeling_flax_auto, attr_name)))
-    return [cls for cls in result]
+    return list(result)
 
 
 def ignore_unautoclassed(model_name):
@@ -438,23 +435,18 @@ def ignore_unautoclassed(model_name):
     if model_name in IGNORE_NON_AUTO_CONFIGURED:
         return True
     # Encoder and Decoder should be ignored
-    if "Encoder" in model_name or "Decoder" in model_name:
-        return True
-    return False
+    return "Encoder" in model_name or "Decoder" in model_name
 
 
 def check_models_are_auto_configured(module, all_auto_models):
     """Check models defined in module are each in an auto class."""
     defined_models = get_models(module)
-    failures = []
-    for model_name, _ in defined_models:
-        if model_name not in all_auto_models and not ignore_unautoclassed(model_name):
-            failures.append(
-                f"{model_name} is defined in {module.__name__} but is not present in any of the auto mapping. "
-                "If that is intended behavior, add its name to `IGNORE_NON_AUTO_CONFIGURED` in the file "
-                "`utils/check_repo.py`."
-            )
-    return failures
+    return [
+        f"{model_name} is defined in {module.__name__} but is not present in any of the auto mapping. If that is intended behavior, add its name to `IGNORE_NON_AUTO_CONFIGURED` in the file `utils/check_repo.py`."
+        for model_name, _ in defined_models
+        if model_name not in all_auto_models
+        and not ignore_unautoclassed(model_name)
+    ]
 
 
 def check_all_models_are_auto_configured():
@@ -466,7 +458,7 @@ def check_all_models_are_auto_configured():
         missing_backends.append("TensorFlow")
     if not is_flax_available():
         missing_backends.append("Flax")
-    if len(missing_backends) > 0:
+    if missing_backends:
         missing = ", ".join(missing_backends)
         if os.getenv("TRANSFORMERS_IS_CI", "").upper() in ENV_VARS_TRUE_VALUES:
             raise Exception(
@@ -649,11 +641,7 @@ def ignore_undocumented(name):
     if name in DEPRECATED_OBJECTS or name in UNDOCUMENTED_OBJECTS:
         return True
     # MMBT model does not really work.
-    if name.startswith("MMBT"):
-        return True
-    if name in SHOULD_HAVE_THEIR_OWN_PAGE:
-        return True
-    return False
+    return True if name.startswith("MMBT") else name in SHOULD_HAVE_THEIR_OWN_PAGE
 
 
 def check_all_objects_are_documented():
@@ -661,8 +649,11 @@ def check_all_objects_are_documented():
     documented_objs = find_all_documented_objects()
     modules = diffusers._modules
     objects = [c for c in dir(diffusers) if c not in modules and not c.startswith("_")]
-    undocumented_objs = [c for c in objects if c not in documented_objs and not ignore_undocumented(c)]
-    if len(undocumented_objs) > 0:
+    if undocumented_objs := [
+        c
+        for c in objects
+        if c not in documented_objs and not ignore_undocumented(c)
+    ]:
         raise Exception(
             "The following objects are in the public init so should be documented:\n - "
             + "\n - ".join(undocumented_objs)
@@ -689,7 +680,7 @@ def check_model_type_doc_match():
                 error_message += f" Did you mean {close_matches}?"
             errors.append(error_message)
 
-    if len(errors) > 0:
+    if errors:
         raise ValueError(
             "Some model doc pages do not match any existing model type:\n"
             + "\n".join(errors)
@@ -714,9 +705,7 @@ def is_rst_docstring(docstring):
         return True
     if _re_double_backquotes.search(docstring) is not None:
         return True
-    if _re_rst_example.search(docstring) is not None:
-        return True
-    return False
+    return _re_rst_example.search(docstring) is not None
 
 
 def check_docstrings_are_in_md():
@@ -733,7 +722,7 @@ def check_docstrings_are_in_md():
             files_with_rst.append(file)
             break
 
-    if len(files_with_rst) > 0:
+    if files_with_rst:
         raise ValueError(
             "The following files have docstrings written in rst:\n"
             + "\n".join([f"- {f}" for f in files_with_rst])

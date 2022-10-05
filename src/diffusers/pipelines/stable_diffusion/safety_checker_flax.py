@@ -117,9 +117,7 @@ class FlaxStableDiffusionSafetyChecker(FlaxPreTrainedModel):
         params_rng, dropout_rng = jax.random.split(rng)
         rngs = {"params": params_rng, "dropout": dropout_rng}
 
-        random_params = self.module.init(rngs, clip_input)["params"]
-
-        return random_params
+        return self.module.init(rngs, clip_input)["params"]
 
     def __call__(
         self,

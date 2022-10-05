@@ -211,9 +211,10 @@ class UNet2DConditionModelTests(ModelTesterMixin, unittest.TestCase):
         # now we save the output and parameter gradients that we will use for comparison purposes with
         # the non-checkpointed run.
         output_not_checkpointed = out.data.clone()
-        grad_not_checkpointed = {}
-        for name, param in model.named_parameters():
-            grad_not_checkpointed[name] = param.grad.data.clone()
+        grad_not_checkpointed = {
+            name: param.grad.data.clone()
+            for name, param in model.named_parameters()
+        }
 
         model.enable_gradient_checkpointing()
         out = model(**inputs_dict).sample
@@ -225,14 +226,15 @@ class UNet2DConditionModelTests(ModelTesterMixin, unittest.TestCase):
         # now we save the output and parameter gradients that we will use for comparison purposes with
         # the non-checkpointed run.
         output_checkpointed = out.data.clone()
-        grad_checkpointed = {}
-        for name, param in model.named_parameters():
-            grad_checkpointed[name] = param.grad.data.clone()
+        grad_checkpointed = {
+            name: param.grad.data.clone()
+            for name, param in model.named_parameters()
+        }
 
         # compare the output and parameters gradients
         self.assertTrue((output_checkpointed == output_not_checkpointed).all())
-        for name in grad_checkpointed:
-            self.assertTrue(torch.allclose(grad_checkpointed[name], grad_not_checkpointed[name], atol=5e-5))
+        for name, value in grad_checkpointed.items():
+            self.assertTrue(torch.allclose(value, grad_not_checkpointed[name], atol=5e-5))
 
 
 #    TODO(Patrick) - Re-add this test after having cleaned up LDM

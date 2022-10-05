@@ -212,7 +212,7 @@ def is_copy_consistent(filename, overwrite=False):
                 lines = lines[:start_index] + [theoretical_code] + lines[line_index:]
                 line_index = start_index + 1
 
-    if overwrite and len(diffs) > 0:
+    if overwrite and diffs:
         # Warn the user a file has been modified.
         print(f"Detected changes, rewriting {filename}.")
         with open(filename, "w", encoding="utf-8", newline="\n") as f:
@@ -253,7 +253,7 @@ def check_full_copies(overwrite: bool = False):
             else:
                 diffs.append(f"- {target}: copy does not match {source}.")
 
-    if not overwrite and len(diffs) > 0:
+    if not overwrite and diffs:
         diff = "\n".join(diffs)
         raise Exception(
             "Found the following copy inconsistencies:\n"
@@ -301,8 +301,11 @@ def convert_to_localized_md(model_list, localized_model_list, format_str):
             paper_affiliations=paper_affiliations,
             paper_title_link=paper_title_link,
             paper_authors=paper_authors,
-            supplements=" " + supplements.strip() if len(supplements) != 0 else "",
+            supplements=f" {supplements.strip()}"
+            if len(supplements) != 0
+            else "",
         )
+
 
     # This regex captures metadata from an English model description, including model title, model link,
     # affiliations of the paper, title of the paper, authors of the paper, and supplemental data (see DistilBERT for example).
@@ -326,7 +329,7 @@ def convert_to_localized_md(model_list, localized_model_list, format_str):
     model_keys = [re.search(r"\*\*\[([^\]]*)", line).groups()[0] for line in model_list.strip().split("\n")]
 
     # We exclude keys in localized README not in the main one.
-    readmes_match = not any([k not in model_keys for k in localized_model_index])
+    readmes_match = all(k in model_keys for k in localized_model_index)
     localized_model_index = {k: v for k, v in localized_model_index.items() if k in model_keys}
 
     for model in model_list.strip().split("\n"):
@@ -335,7 +338,7 @@ def convert_to_localized_md(model_list, localized_model_list, format_str):
             readmes_match = False
             # Add an anchor white space behind a model description string for regex.
             # If metadata cannot be captured, the English version will be directly copied.
-            localized_model_index[title] = _re_capture_meta.sub(_rep, model + " ")
+            localized_model_index[title] = _re_capture_meta.sub(_rep, f"{model} ")
         else:
             # Synchronize link
             localized_model_index[title] = _re_capture_title_link.sub(
@@ -388,15 +391,14 @@ def check_model_list_copy(overwrite=False, max_per_line=119):
         "https://huggingface.co/docs/main/diffusers", "https://huggingface.co/docs/diffusers/main"
     )
     if new_readme != readme:
-        if overwrite:
-            with open(os.path.join(REPO_PATH, "README.md"), "w", encoding="utf-8", newline="\n") as f:
-                f.write(new_readme)
-        else:
+        if not overwrite:
             raise ValueError(
                 "The main README contains wrong links to the documentation of Transformers. Run `make fix-copies` to "
                 "automatically fix them."
             )
 
+        with open(os.path.join(REPO_PATH, "README.md"), "w", encoding="utf-8", newline="\n") as f:
+            f.write(new_readme)
     # If the introduction or the conclusion of the list change, the prompts may need to be updated.
     index_list, start_index, end_index, lines = _find_text_in_file(
         filename=os.path.join(PATH_TO_DOCS, "index.mdx"),
@@ -422,15 +424,14 @@ def check_model_list_copy(overwrite=False, max_per_line=119):
 
     converted_md_list = convert_readme_to_index(md_list)
     if converted_md_list != index_list:
-        if overwrite:
-            with open(os.path.join(PATH_TO_DOCS, "index.mdx"), "w", encoding="utf-8", newline="\n") as f:
-                f.writelines(lines[:start_index] + [converted_md_list] + lines[end_index:])
-        else:
+        if not overwrite:
             raise ValueError(
                 "The model list in the README changed and the list in `index.mdx` has not been updated. Run "
                 "`make fix-copies` to fix this."
             )
 
+        with open(os.path.join(PATH_TO_DOCS, "index.mdx"), "w", encoding="utf-8", newline="\n") as f:
+            f.writelines(lines[:start_index] + [converted_md_list] + lines[end_index:])
     for converted_md_list in converted_md_lists:
         filename, readmes_match, converted_md, _start_prompt, _end_prompt = converted_md_list
 

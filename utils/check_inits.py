@@ -101,9 +101,9 @@ def parse_init(init_file):
         if _re_try.search(lines[line_index - 1]) is None:
             backend = None
 
-        if backend is not None:
-            line_index += 1
+        line_index += 1
 
+        if backend is not None:
             # Scroll until we hit the else block of try-except-else
             while _re_else.search(lines[line_index]) is None:
                 line_index += 1
@@ -133,9 +133,6 @@ def parse_init(init_file):
                 line_index += 1
 
             import_dict_objects[backend] = objects
-        else:
-            line_index += 1
-
     # At this stage we are in the TYPE_CHECKING part, first grab the objects without a specific backend
     objects = []
     while (
@@ -160,9 +157,9 @@ def parse_init(init_file):
         if _re_try.search(lines[line_index - 1]) is None:
             backend = None
 
-        if backend is not None:
-            line_index += 1
+        line_index += 1
 
+        if backend is not None:
             # Scroll until we hit the else block of try-except-else
             while _re_else.search(lines[line_index]) is None:
                 line_index += 1
@@ -181,9 +178,6 @@ def parse_init(init_file):
                 line_index += 1
 
             type_hint_objects[backend] = objects
-        else:
-            line_index += 1
-
     return import_dict_objects, type_hint_objects
 
 
@@ -234,7 +228,7 @@ def check_all_inits():
                 if len(errors) > 0:
                     errors[0] = f"Problem in {fname}, both halves do not define the same objects.\n{errors[0]}"
                     failures.append("\n".join(errors))
-    if len(failures) > 0:
+    if failures:
         raise ValueError("\n\n".join(failures))
 
 
@@ -250,7 +244,7 @@ def get_transformers_submodules():
                 directories.remove(folder)
                 continue
             # Ignore leftovers from branches (empty folders apart from pycache)
-            if len(list((Path(path) / folder).glob("*.py"))) == 0:
+            if not list((Path(path) / folder).glob("*.py")):
                 continue
             short_path = str((Path(path) / folder).relative_to(PATH_TO_TRANSFORMERS))
             submodule = short_path.replace(os.path.sep, ".")
@@ -280,12 +274,12 @@ def check_submodules():
     )
     transformers = spec.loader.load_module()
 
-    module_not_registered = [
+    if module_not_registered := [
         module
         for module in get_transformers_submodules()
-        if module not in IGNORE_SUBMODULES and module not in transformers._import_structure.keys()
-    ]
-    if len(module_not_registered) > 0:
+        if module not in IGNORE_SUBMODULES
+        and module not in transformers._import_structure.keys()
+    ]:
         list_of_modules = "\n".join(f"- {module}" for module in module_not_registered)
         raise ValueError(
             "The following submodules are not properly registered in the main init of Transformers:\n"
